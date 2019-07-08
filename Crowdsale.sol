@@ -1,19 +1,29 @@
 pragma solidity >= 0.4.22 < 0.6.0;
 
-import './safemath.sol';
+import './Safemath.sol';
 import './LightToken.sol';
 
 contract Crowdsale {
+    using Safemath for uint256;
     
     bool public icoCompleted;
     uint public icoStartTime;
     uint public icoEndTime;
-    uint public tokenRate;
     uint public fundingGoal;
     address payable owner;
     LightToken public lightToken;
     uint public tokensRaised;
     uint public etherRaised;
+    
+    // add variables to increase the token price as the supply decreases
+    uint256 public rateOne = 5000;
+    uint256 public rateTwo = 4000;
+    uint256 public rateThree = 3000;
+    uint256 public rateFour = 2000;
+    uint256 public limitTierOne = 25e6 * (10 ** token.decimals());
+    uint256 public limitTierTwo = 50e6 * (10 ** token.decimals());
+    uint256 public limitTierThree = 75e6 * (10 ** token.decimals());
+    uint256 public limitTierFour = 100e6 * (10 ** token.decimals());
     
     modifier whenIcoCompleted {
         require(icoCompleted);
@@ -55,7 +65,13 @@ contract Crowdsale {
         require(now < icoEndTime && now > icoStartTime);
         
         uint etherUsed = msg.value;
-        uint tokensToBuy = etherUsed * (10 ** lightToken.decimals()) / 1 ether * tokenRate;
+        uint tokensToBuy;
+        
+        // If the tokens raised are less then 25 million decimals, apply first rate
+        if(tokensRaised < limitTierOne){
+            // Tier One
+            tokensToBuy = etherUsed * (10 ** lightToken.decimals()) / 1 ether * rateOne;
+        }
         
         // check if we hace reached and exceeded the funcing goal to refund the exceeding tokens and ether
         if(tokensRaised + tokensToBuy > fundingGoal){
